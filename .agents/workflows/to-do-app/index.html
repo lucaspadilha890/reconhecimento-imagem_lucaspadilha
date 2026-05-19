@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskFlow – Gerenciador de Tarefas</title>
+  <meta name="description" content="Gerencie suas tarefas com elegância. Login, cadastro e painel pessoal de tarefas." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      background-color: #0f172a;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 20% 10%, rgba(99, 102, 241, 0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 55%);
+      color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* Glassmorphism card */
+    .glass {
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+
+    /* Inputs */
+    .field {
+      width: 100%;
+      padding: 0.625rem 1rem;
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(100, 116, 139, 0.35);
+      border-radius: 0.75rem;
+      color: #f8fafc;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .field::placeholder { color: #64748b; }
+    .field:focus {
+      border-color: rgba(99, 102, 241, 0.6);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+    .field option { background: #1e293b; color: #f8fafc; }
+
+    /* Primary button */
+    .btn-primary {
+      width: 100%;
+      padding: 0.65rem 1rem;
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.9rem;
+      border-radius: 0.75rem;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+    }
+    .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(99, 102, 241, 0.45); }
+    .btn-primary:active { transform: translateY(0); }
+
+    /* Secondary / ghost button */
+    .btn-ghost {
+      padding: 0.45rem 1rem;
+      background: rgba(30, 41, 59, 0.7);
+      color: #94a3b8;
+      font-size: 0.82rem;
+      font-weight: 500;
+      border-radius: 0.65rem;
+      border: 1px solid rgba(100, 116, 139, 0.3);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      white-space: nowrap;
+    }
+    .btn-ghost:hover { background: rgba(51, 65, 85, 0.8); color: #f1f5f9; }
+
+    /* Error text */
+    .err { color: #f87171; font-size: 0.75rem; margin-top: 0.3rem; display: none; }
+    .err.show { display: block; }
+
+    /* Todo card */
+    .todo-card {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(100, 116, 139, 0.18);
+      border-radius: 1rem;
+      padding: 1rem 1.25rem;
+      transition: opacity 0.3s, transform 0.3s;
+      animation: slideIn 0.25s ease;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .todo-card.done-card { opacity: 0.45; }
+    .todo-card.done-card .todo-title { text-decoration: line-through; color: #64748b; }
+
+    /* Type badges */
+    .badge {
+      display: inline-block;
+      padding: 0.18rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .badge-trabalho { background: rgba(59, 130, 246, 0.18); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .badge-pessoal  { background: rgba(139, 92, 246, 0.18); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.3); }
+    .badge-estudos  { background: rgba(16, 185, 129, 0.18); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+    /* Complete button */
+    .btn-done {
+      padding: 0.3rem 0.8rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 0.55rem;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      background: rgba(16, 185, 129, 0.1);
+      color: #34d399;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      white-space: nowrap;
+    }
+    .btn-done:hover { background: rgba(16, 185, 129, 0.22); }
+    .btn-done:disabled { opacity: 0.35; cursor: default; }
+
+    /* Delete button */
+    .btn-del {
+      padding: 0.3rem 0.6rem;
+      font-size: 0.75rem;
+      border-radius: 0.55rem;
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      background: rgba(248, 113, 113, 0.08);
+      color: #f87171;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-del:hover { background: rgba(248, 113, 113, 0.2); }
+
+    /* Screen toggle */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 99px; }
+
+    /* Link style */
+    .link { color: #818cf8; cursor: pointer; font-weight: 500; transition: color 0.2s; }
+    .link:hover { color: #a5b4fc; }
+
+    /* Dashboard full-width header */
+    #dashboard-screen { min-height: 100vh; display: none; flex-direction: column; }
+    #dashboard-screen.active { display: flex; }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════
+       AUTH WRAPPER  (Login + Cadastro)
+  ═══════════════════════════════════════════ -->
+  <div id="auth-wrapper" class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- LOGIN -->
+    <div id="login-screen" class="screen active w-full max-w-md glass rounded-2xl p-8">
+      <div class="mb-8 text-center">
+        <span class="text-3xl">✅</span>
+        <h1 class="text-2xl font-bold mt-2 text-white">TaskFlow</h1>
+        <p class="text-slate-400 text-sm mt-1">Bem-vindo de volta</p>
+      </div>
+
+      <form id="login-form" novalidate class="space-y-5">
+        <div>
+          <label for="login-email" class="block text-sm font-medium text-slate-300 mb-1.5">E-mail</label>
+          <input id="login-email" type="email" class="field" placeholder="seu@email.com" />
+          <p id="err-login-email" class="err"></p>
+        </div>
+        <div>
+          <label for="login-password" class="block text-sm font-medium text-slate-300 mb-1.5">Senha</label>
+          <input id="login-password" type="password" class="field" placeholder="••••••••" />
+          <p id="err-login-password" class="err"></p>
+        </div>
+        <p id="err-login-general" class="err text-center" style="font-size:0.82rem;"></p>
+        <button id="btn-login-submit" type="submit" class="btn-primary mt-2">Entrar</button>
+      </form>
+
+      <p class="mt-7 text-center text-sm text-slate-400">
+        Não tem conta? <span id="go-register" class="link">Cadastre-se</span>
+      </p>
+    </div>
+
+    <!-- CADASTRO -->
+    <div id="register-screen" class="screen w-full max-w-md glass rounded-2xl p-8">
+      <div class="mb-8 text-center">
+        <span class="text-3xl">✅</span>
+        <h1 class="text-2xl font-bold mt-2 text-white">TaskFlow</h1>
+        <p class="text-slate-400 text-sm mt-1">Crie sua conta gratuita</p>
+      </div>
+
+      <form id="register-form" novalidate class="space-y-5">
+        <div>
+          <label for="reg-name" class="block text-sm font-medium text-slate-300 mb-1.5">Nome</label>
+          <input id="reg-name" type="text" class="field" placeholder="Seu nome completo" />
+          <p id="err-reg-name" class="err"></p>
+        </div>
+        <div>
+          <label for="reg-email" class="block text-sm font-medium text-slate-300 mb-1.5">E-mail</label>
+          <input id="reg-email" type="email" class="field" placeholder="seu@email.com" />
+          <p id="err-reg-email" class="err"></p>
+        </div>
+        <div>
+          <label for="reg-password" class="block text-sm font-medium text-slate-300 mb-1.5">Senha</label>
+          <input id="reg-password" type="password" class="field" placeholder="Mínimo 6 caracteres" />
+          <p id="err-reg-password" class="err"></p>
+        </div>
+        <p id="err-reg-general" class="err text-center" style="font-size:0.82rem;"></p>
+        <button id="btn-register-submit" type="submit" class="btn-primary mt-2">Criar Conta</button>
+      </form>
+
+      <p class="mt-7 text-center text-sm text-slate-400">
+        Já tem conta? <span id="go-login" class="link">Entrar</span>
+      </p>
+    </div>
+
+  </div><!-- /auth-wrapper -->
+
+
+  <!-- ═══════════════════════════════════════════
+       DASHBOARD
+  ═══════════════════════════════════════════ -->
+  <div id="dashboard-screen">
+
+    <!-- Header -->
+    <header class="glass sticky top-0 z-50" style="border-radius:0; border-left:0; border-right:0; border-top:0;">
+      <div class="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="text-2xl flex-shrink-0">✅</span>
+          <div class="min-w-0">
+            <p class="text-xs text-slate-400 uppercase tracking-widest font-medium">TaskFlow</p>
+            <h2 id="greeting" class="text-base font-semibold text-white truncate"></h2>
+          </div>
+        </div>
+        <button id="btn-logout" class="btn-ghost flex-shrink-0">Sair →</button>
+      </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="max-w-3xl mx-auto px-4 py-8 w-full flex-1 space-y-8">
+
+      <!-- Add Task Form -->
+      <section class="glass rounded-2xl p-6">
+        <h3 class="text-base font-semibold text-slate-200 mb-5 flex items-center gap-2">
+          <span class="w-1.5 h-5 rounded-full bg-indigo-500 inline-block"></span>
+          Nova Tarefa
+        </h3>
+
+        <form id="todo-form" novalidate class="space-y-4">
+          <div>
+            <label for="todo-title" class="block text-sm font-medium text-slate-300 mb-1.5">Título <span class="text-rose-400">*</span></label>
+            <input id="todo-title" type="text" class="field" placeholder="O que precisa ser feito?" />
+            <p id="err-todo-title" class="err"></p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="todo-type" class="block text-sm font-medium text-slate-300 mb-1.5">Tipo</label>
+              <select id="todo-type" class="field">
+                <option value="Trabalho">💼 Trabalho</option>
+                <option value="Pessoal">🙂 Pessoal</option>
+                <option value="Estudos">📚 Estudos</option>
+              </select>
+            </div>
+            <div class="sm:col-span-1 hidden sm:block"></div>
+          </div>
+
+          <div>
+            <label for="todo-desc" class="block text-sm font-medium text-slate-300 mb-1.5">Descrição <span class="text-slate-500 font-normal">(opcional)</span></label>
+            <textarea id="todo-desc" class="field" rows="2" placeholder="Detalhes adicionais..."></textarea>
+          </div>
+
+          <button id="btn-add-todo" type="submit" class="btn-primary" style="max-width:200px;">+ Adicionar Tarefa</button>
+        </form>
+      </section>
+
+      <!-- Task List -->
+      <section>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-base font-semibold text-slate-200 flex items-center gap-2">
+            <span class="w-1.5 h-5 rounded-full bg-emerald-500 inline-block"></span>
+            Minhas Tarefas
+          </h3>
+          <span id="task-counter" class="text-xs text-slate-500 font-medium"></span>
+        </div>
+
+        <div id="todo-list" class="space-y-3">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+    </main>
+  </div><!-- /dashboard-screen -->
+
+  <script src="app.js"></script>
+</body>
+</html>
